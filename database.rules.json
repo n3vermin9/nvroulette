@@ -1,0 +1,25 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "games": {
+      "$gameId": {
+        "tables": {
+          "$tableId": {
+            ".read": "auth != null",
+            "seats": {
+              "$seatId": {
+                ".write": "auth != null && (!data.exists() || data.child('uid').val() == auth.uid)"
+              }
+            },
+            "bets": {
+              "$uid": {
+                ".write": "auth != null && auth.uid == $uid"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

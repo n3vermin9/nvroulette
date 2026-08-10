@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidNewUser() {
+      return request.resource.data.keys().hasAll([
+          'displayName',
+          'chipBalance',
+          'createdAt',
+          'lastDailyBonusAt',
+          'stats'
+        ])
+        && request.resource.data.chipBalance is int
+        && request.resource.data.chipBalance == 10000
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 32
+        && request.resource.data.stats.roundsPlayed == 0
+        && request.resource.data.stats.totalWagered == 0
+        && request.resource.data.stats.totalWon == 0;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // Profile bootstrap only — chip mutations move to Cloud Functions later.
+      allow create: if isOwner(uid) && isValidNewUser();
+      allow update: if isOwner(uid)
+        && request.resource.data.chipBalance == resource.data.chipBalance
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.lastDailyBonusAt == resource.data.lastDailyBonusAt
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName']);
+      allow delete: if false;
+    }
+
+    match /transactions/{txId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      // Writes reserved for Cloud Functions (Admin SDK).
+      allow write: if false;
+    }
+  }
+}
