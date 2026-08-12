@@ -15,6 +15,7 @@ import {
 } from '@/games/plinko/engine'
 import { useGameBet } from '@/hooks/useGameBet'
 import { formatMoneyDelta } from '@/lib/format'
+import { playOutcome, playSound } from '@/lib/sounds'
 
 export function PlinkoPage() {
   const { debitBet, creditPayout } = useAuth()
@@ -40,6 +41,8 @@ export function PlinkoPage() {
       })
 
       const net = event.payout - event.bet
+      playSound('land')
+      playOutcome(net)
       setResultMsg(`${event.multiplier}x · ${formatMoneyDelta(net)}`)
     },
     [creditPayout],
@@ -70,6 +73,7 @@ export function PlinkoPage() {
     }
 
     setInFlight((n) => n + 1)
+    playSound('start')
     setResultMsg(null)
   }
 

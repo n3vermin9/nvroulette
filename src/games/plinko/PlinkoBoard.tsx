@@ -16,6 +16,7 @@ import {
   payoutForBin,
 } from '@/games/plinko/engine'
 import { formatMoney } from '@/lib/format'
+import { playSound } from '@/lib/sounds'
 
 export type BallLandedEvent = {
   id: string
@@ -323,7 +324,9 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
           if (!ball) continue
 
           const other = ball === a ? b : a
-          if (other.label.startsWith('bin:')) {
+          if (other.label === 'peg') {
+            playSound('peg')
+          } else if (other.label.startsWith('bin:')) {
             settleBall(ball, Number(other.label.slice(4)))
           } else if (other.label === 'floor') {
             settleBall(ball, binIndexAt(ball.position.x))

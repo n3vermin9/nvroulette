@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { formatMoney } from '@/lib/format'
+import { playSound, unlockAudio } from '@/lib/sounds'
 
 type Props = {
   bet: number
@@ -30,6 +31,14 @@ type Props = {
   canMinOrMax: boolean
   /** Game-specific controls above the shared stake row (e.g. roulette bets). */
   children?: ReactNode
+}
+
+function withClick(fn: () => void) {
+  return () => {
+    unlockAudio()
+    playSound('click')
+    fn()
+  }
 }
 
 export function GameBetControls({
@@ -66,7 +75,7 @@ export function GameBetControls({
     (!skipBalanceCheck && balance < bet)
 
   return (
-    <div className="game-controls">
+    <div className="game-controls" onPointerDown={unlockAudio}>
       {children}
 
       <div className="game-stake">
@@ -76,7 +85,7 @@ export function GameBetControls({
             className="game-step-btn"
             aria-label="Decrease bet"
             disabled={stakeLocked}
-            onClick={() => onStep(-1)}
+            onClick={withClick(() => onStep(-1))}
           >
             −
           </button>
@@ -101,7 +110,7 @@ export function GameBetControls({
             className="game-step-btn"
             aria-label="Increase bet"
             disabled={stakeLocked}
-            onClick={() => onStep(1)}
+            onClick={withClick(() => onStep(1))}
           >
             +
           </button>
@@ -112,7 +121,7 @@ export function GameBetControls({
             type="button"
             className={['game-preset', bet === minBet ? 'active' : ''].join(' ')}
             disabled={stakeLocked || !canMinOrMax}
-            onClick={onMin}
+            onClick={withClick(onMin)}
           >
             Min
           </button>
@@ -120,7 +129,7 @@ export function GameBetControls({
             type="button"
             className="game-preset"
             disabled={stakeLocked || !canHalf}
-            onClick={onHalf}
+            onClick={withClick(onHalf)}
           >
             ½
           </button>
@@ -128,7 +137,7 @@ export function GameBetControls({
             type="button"
             className="game-preset"
             disabled={stakeLocked || !canDouble}
-            onClick={onDouble}
+            onClick={withClick(onDouble)}
           >
             x2
           </button>
@@ -136,7 +145,7 @@ export function GameBetControls({
             type="button"
             className="game-preset"
             disabled={stakeLocked || !canMinOrMax}
-            onClick={onMax}
+            onClick={withClick(onMax)}
           >
             Max
           </button>
@@ -147,7 +156,10 @@ export function GameBetControls({
         type="button"
         className="btn-primary game-action-btn"
         disabled={actionDisabled}
-        onClick={onAction}
+        onClick={() => {
+          unlockAudio()
+          onAction()
+        }}
       >
         {busy && actionBusyLabel
           ? actionBusyLabel

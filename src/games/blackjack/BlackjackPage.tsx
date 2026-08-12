@@ -25,6 +25,7 @@ import {
 import { preloadBjAssets } from '@/games/blackjack/gifts'
 import { useGameBet } from '@/hooks/useGameBet'
 import { formatMoneyDelta } from '@/lib/format'
+import { playOutcome, playSound } from '@/lib/sounds'
 
 type Phase = 'idle' | 'player' | 'dealer' | 'settled'
 
@@ -131,6 +132,7 @@ export function BlackjackPage() {
     const detail = `${handValue(playerHand).total} vs ${handValue(dealerHand).total} · ${formatMoneyDelta(net)}`
     setBanner({ tone: outcomeTone(outcome), title, detail })
     setResultMsg(`${title} · ${formatMoneyDelta(net)}`)
+    playOutcome(net)
     setPhase('settled')
     setActiveBet(0)
     setRefId(null)
@@ -146,6 +148,7 @@ export function BlackjackPage() {
   ) {
     setPhase('dealer')
     setHideHole(false)
+    playSound('card')
     let d = [...dealerHand]
     let s = restShoe
 
@@ -157,6 +160,7 @@ export function BlackjackPage() {
       s = rest
       setDealer(d)
       setShoe(s)
+      playSound('card')
       await wait(380)
     }
 
@@ -198,6 +202,8 @@ export function BlackjackPage() {
     setResultMsg(null)
     setBanner(null)
     setCanDoubleDown(stake.profile.chipBalance >= amount * 2)
+    playSound('start')
+    playSound('card')
 
     const pv = handValue(p)
     const dv = handValue(d)
@@ -217,6 +223,7 @@ export function BlackjackPage() {
     const next = [...player, card]
     setPlayer(next)
     setShoe(rest)
+    playSound('card')
     const v = handValue(next)
     if (v.bust) {
       setHideHole(false)
@@ -230,6 +237,7 @@ export function BlackjackPage() {
 
   function onStand() {
     if (phase !== 'player' || !refId) return
+    playSound('click')
     void runDealer(player, dealer, shoe, activeBet, refId)
   }
 
@@ -261,11 +269,13 @@ export function BlackjackPage() {
     const totalBet = activeBet + extra
     setActiveBet(totalBet)
     setCanDoubleDown(false)
+    playSound('bet')
 
     const { card, rest } = take(shoe)
     const next = [...player, card]
     setPlayer(next)
     setShoe(rest)
+    playSound('card')
 
     if (handValue(next).bust) {
       setHideHole(false)

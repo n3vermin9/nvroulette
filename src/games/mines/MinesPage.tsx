@@ -27,6 +27,7 @@ import {
 import { preloadGiftRoles } from '@/gifts/loadGiftLottie'
 import { useGameBet } from '@/hooks/useGameBet'
 import { formatMoneyDelta } from '@/lib/format'
+import { playSound } from '@/lib/sounds'
 
 type Phase = 'idle' | 'playing' | 'busted'
 
@@ -124,6 +125,7 @@ export function MinesPage() {
     setBoardKey((k) => k + 1)
     setPhase('playing')
     setResultMsg(null)
+    playSound('start')
   }
 
   function onReveal(index: number) {
@@ -139,6 +141,7 @@ export function MinesPage() {
         return revealAllMines(next, mines)
       })
       setPhase('busted')
+      playSound('boom')
       const loss = formatMoneyDelta(-activeBet)
       const loseBanner: ResultBannerState = {
         tone: 'lose',
@@ -191,6 +194,7 @@ export function MinesPage() {
         title: 'You win',
         detail: `Cleared · ${nextMult.toFixed(2)}x · ${formatMoneyDelta(net)}`,
       })
+      playSound('win')
       setResultMsg(
         `Cleared · ${nextMult.toFixed(2)}x · ${formatMoneyDelta(net)}`,
       )
@@ -206,6 +210,7 @@ export function MinesPage() {
       return next
     })
     setRevealed(nextRevealed)
+    playSound('gem')
     setResultMsg(`${nextMult.toFixed(2)}x`)
   }
 
@@ -228,6 +233,7 @@ export function MinesPage() {
       title: 'You win',
       detail: `Cash out · ${multiplier.toFixed(2)}x · ${formatMoneyDelta(net)}`,
     })
+    playSound('cash')
     setResultMsg(
       `Cash out · ${multiplier.toFixed(2)}x · ${formatMoneyDelta(net)}`,
     )
@@ -318,7 +324,10 @@ export function MinesPage() {
                   mineCount === n ? 'active' : '',
                 ].join(' ')}
                 disabled={inRound}
-                onClick={() => setMineCount(n)}
+                onClick={() => {
+                  playSound('click')
+                  setMineCount(n)
+                }}
               >
                 <span className="mines-option-name">{n}</span>
                 <span className="mines-option-mult">mines</span>

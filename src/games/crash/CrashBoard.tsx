@@ -222,9 +222,10 @@ export function CrashBoard({ phase, multiplier }: Props) {
         }}
       >
         <TgGiftLottie
+          key={flying ? 'fly' : 'idle'}
           role="crash"
-          play={flying}
-          loop={flying}
+          play={!crashed}
+          loop={!active}
           className="crash-board-rider-lottie"
           fallback={
             <img

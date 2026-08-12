@@ -22,6 +22,7 @@ import {
 import { preloadGiftRoles } from '@/gifts/loadGiftLottie'
 import { useGameBet } from '@/hooks/useGameBet'
 import { formatMoneyDelta } from '@/lib/format'
+import { playSound } from '@/lib/sounds'
 
 export function CrashPage() {
   const { debitBet, creditPayout } = useAuth()
@@ -39,6 +40,7 @@ export function CrashPage() {
   const betRef = useRef(0)
   const refIdRef = useRef<string | null>(null)
   const multRef = useRef(1)
+  const tickFloorRef = useRef(1)
 
   const stake = useGameBet({
     minBet: CRASH_MIN_BET,
@@ -81,6 +83,7 @@ export function CrashPage() {
       title: 'You lose',
       detail: `Crashed at ${formatMultiplier(crashAt)} · ${loss}`,
     })
+    playSound('boom')
     setResultMsg(`Crashed · ${formatMultiplier(crashAt)} · ${loss}`)
     setActiveBet(0)
     betRef.current = 0
@@ -107,6 +110,11 @@ export function CrashPage() {
 
     setMultiplier(live)
     setProgress(surfProgress(live, crashAt))
+    const floor = Math.floor(live)
+    if (floor > tickFloorRef.current) {
+      tickFloorRef.current = floor
+      playSound('tick')
+    }
     rafRef.current = requestAnimationFrame(tick)
   }
 
@@ -128,12 +136,14 @@ export function CrashPage() {
     betRef.current = amount
     refIdRef.current = id
     multRef.current = 1
+    tickFloorRef.current = 1
     setActiveBet(amount)
     setBanner(null)
     setResultMsg(null)
     setMultiplier(1)
     setProgress(0)
     setPhase('flying')
+    playSound('start')
     stopLoop()
     rafRef.current = requestAnimationFrame(tick)
   }
@@ -161,6 +171,7 @@ export function CrashPage() {
       title: 'You win',
       detail: `Cashed · ${formatMultiplier(mult)} · ${formatMoneyDelta(net)}`,
     })
+    playSound('cash')
     setResultMsg(`Cashed · ${formatMultiplier(mult)} · ${formatMoneyDelta(net)}`)
     setActiveBet(0)
     betRef.current = 0

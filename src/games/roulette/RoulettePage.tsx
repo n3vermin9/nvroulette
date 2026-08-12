@@ -24,6 +24,7 @@ import { RouletteWheel } from '@/games/roulette/RouletteWheel'
 import { preloadGiftRoles } from '@/gifts/loadGiftLottie'
 import { useGameBet } from '@/hooks/useGameBet'
 import { formatMoneyDelta } from '@/lib/format'
+import { playOutcome, playSound } from '@/lib/sounds'
 
 const SPIN_MS = 4200
 
@@ -66,6 +67,7 @@ export function RoulettePage() {
     setResultMsg(null)
     setBanner(null)
     setLastResult(null)
+    playSound('spin')
     setRotation((prev) => {
       const current = ((prev % 360) + 360) % 360
       let delta = landing - current
@@ -97,6 +99,7 @@ export function RoulettePage() {
         title: net > 0 ? 'You win' : net < 0 ? 'You lose' : 'Push',
         detail,
       })
+      playOutcome(net)
       setResultMsg(detail)
     }, SPIN_MS)
   }
@@ -162,7 +165,10 @@ export function RoulettePage() {
                     selected === b.type ? 'active' : '',
                   ].join(' ')}
                   disabled={spinning}
-                  onClick={() => setSelected(b.type)}
+                  onClick={() => {
+                    playSound('click')
+                    setSelected(b.type)
+                  }}
                 >
                   <span className="roulette-bet-name">{b.label}</span>
                   <span className="roulette-bet-mult">{b.multiplier}</span>
@@ -179,7 +185,10 @@ export function RoulettePage() {
                     selected === b.type ? 'active' : '',
                   ].join(' ')}
                   disabled={spinning}
-                  onClick={() => setSelected(b.type)}
+                  onClick={() => {
+                    playSound('click')
+                    setSelected(b.type)
+                  }}
                 >
                   <span className="roulette-bet-name">{b.label}</span>
                   <span className="roulette-bet-mult">{b.multiplier}</span>
