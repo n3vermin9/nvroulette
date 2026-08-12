@@ -1,64 +1,55 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { GameBetControls } from '@/components/GameBetControls'
 import { GameOpenOverlay } from '@/components/GameOpenOverlay'
+import {
+  GameResultBanner,
+  toneFromNet,
+  type ResultBannerState,
+} from '@/components/GameResultBanner'
 import { useAuth } from '@/context/AuthContext'
 import {
   clampRouletteBet,
+  COLOR_BETS,
+  landingRotation,
   nextRouletteBetStep,
-  OUTSIDE_BETS,
   payoutForBet,
-  rotationForIndex,
+  RANGE_BETS,
   ROULETTE_MIN_BET,
   spinEuropean,
   type OutsideBetType,
   type SpinResult,
 } from '@/games/roulette/engine'
 import { RouletteWheel } from '@/games/roulette/RouletteWheel'
-import { formatMoney, formatMoneyDelta } from '@/lib/format'
+import { preloadGiftRoles } from '@/gifts/loadGiftLottie'
+import { useGameBet } from '@/hooks/useGameBet'
+import { formatMoneyDelta } from '@/lib/format'
 
 const SPIN_MS = 4200
 
 export function RoulettePage() {
-  const { profile, debitBet, creditPayout } = useAuth()
-  const [bet, setBet] = useState(ROULETTE_MIN_BET)
-  const [betInput, setBetInput] = useState(String(ROULETTE_MIN_BET))
+  const { debitBet, creditPayout } = useAuth()
   const [selected, setSelected] = useState<OutsideBetType>('red')
   const [spinning, setSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
   const [lastResult, setLastResult] = useState<SpinResult | null>(null)
   const [resultMsg, setResultMsg] = useState<string | null>(null)
+  const [banner, setBanner] = useState<ResultBannerState | null>(null)
 
-  const balance = profile?.chipBalance ?? 0
+  const stake = useGameBet({
+    minBet: ROULETTE_MIN_BET,
+    clamp: clampRouletteBet,
+    nextStep: nextRouletteBetStep,
+  })
 
   useEffect(() => {
-    setBet((current) => {
-      const next = clampRouletteBet(current, balance || current)
-      setBetInput(String(next))
-      return next
-    })
-  }, [balance])
-
-  const applyBet = useCallback(
-    (value: number) => {
-      const next = clampRouletteBet(
-        value,
-        balance > 0 ? balance : ROULETTE_MIN_BET,
-      )
-      setBet(next)
-      setBetInput(String(next))
-    },
-    [balance],
-  )
-
-  function commitInput() {
-    const parsed = Number(betInput.replace(/[^0-9.]/g, ''))
-    applyBet(parsed)
-  }
+    void preloadGiftRoles(['roulette'])
+  }, [])
 
   function onSpin() {
-    if (!profile || spinning) return
-    const amount = clampRouletteBet(bet, profile.chipBalance)
-    if (amount !== bet) applyBet(amount)
+    if (!stake.profile || spinning) return
+    const amount = clampRouletteBet(stake.bet, stake.profile.chipBalance)
+    if (amount !== stake.bet) stake.applyBet(amount)
 
     const refId = crypto.randomUUID()
     const debited = debitBet({ game: 'roulette', amount, refId })
@@ -67,11 +58,13 @@ export function RoulettePage() {
       return
     }
 
+    const betType = selected
     const result = spinEuropean()
     const spins = 6 + Math.floor(Math.random() * 3)
-    const landing = rotationForIndex(result.index, 0)
+    const landing = landingRotation(result.index)
     setSpinning(true)
     setResultMsg(null)
+    setBanner(null)
     setLastResult(null)
     setRotation((prev) => {
       const current = ((prev % 360) + 360) % 360
@@ -81,7 +74,7 @@ export function RoulettePage() {
     })
 
     window.setTimeout(() => {
-      const payout = payoutForBet({ type: selected, amount }, result)
+      const payout = payoutForBet({ type: betType, amount }, result)
       creditPayout({
         game: 'roulette',
         amount: payout,
@@ -98,11 +91,13 @@ export function RoulettePage() {
           : result.color === 'red'
             ? 'Red'
             : 'Black'
-      setResultMsg(
-        payout > 0
-          ? `${result.number} ${colorLabel} · ${formatMoneyDelta(net)}`
-          : `${result.number} ${colorLabel} · ${formatMoneyDelta(-amount)}`,
-      )
+      const detail = `${result.number} ${colorLabel} · ${formatMoneyDelta(net)}`
+      setBanner({
+        tone: toneFromNet(net),
+        title: net > 0 ? 'You win' : net < 0 ? 'You lose' : 'Push',
+        detail,
+      })
+      setResultMsg(detail)
     }, SPIN_MS)
   }
 
@@ -122,6 +117,7 @@ export function RoulettePage() {
         </div>
 
         <div className="roulette-wheel-slot">
+          <GameResultBanner banner={banner} />
           <RouletteWheel
             rotationDeg={rotation}
             spinning={spinning}
@@ -129,123 +125,69 @@ export function RoulettePage() {
           />
         </div>
 
-        <div className="roulette-controls">
+        <GameBetControls
+          bet={stake.bet}
+          betInput={stake.betInput}
+          minBet={stake.minBet}
+          balance={stake.balance}
+          disabled={spinning}
+          busy={spinning}
+          actionLabel="Spin"
+          actionBusyLabel="Spinning…"
+          canAct={stake.canAfford}
+          resultMsg={resultMsg}
+          onBetInputChange={stake.onBetInputChange}
+          onCommitInput={stake.commitInput}
+          onStep={stake.step}
+          onMin={stake.setMin}
+          onHalf={stake.setHalf}
+          onDouble={stake.setDouble}
+          onMax={stake.setMax}
+          onAction={onSpin}
+          canHalf={stake.canHalf}
+          canDouble={stake.canDouble}
+          canMinOrMax={stake.canMinOrMax}
+        >
           <div className="roulette-bets" role="group" aria-label="Bet type">
-            {OUTSIDE_BETS.map((b) => (
-              <button
-                key={b.type}
-                type="button"
-                className={[
-                  'roulette-bet-chip',
-                  b.type === 'red' ? 'is-red' : '',
-                  b.type === 'black' ? 'is-black' : '',
-                  selected === b.type ? 'active' : '',
-                ].join(' ')}
-                disabled={spinning}
-                onClick={() => setSelected(b.type)}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="bet-panel">
-            <div className="bet-stepper">
-              <button
-                type="button"
-                className="bet-step-btn"
-                aria-label="Decrease bet"
-                disabled={spinning}
-                onClick={() => applyBet(nextRouletteBetStep(bet, -1))}
-              >
-                −
-              </button>
-              <div className="bet-input-wrap">
-                <span className="bet-input-prefix">$</span>
-                <input
-                  className="bet-input"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={betInput}
-                  aria-label="Bet amount"
+            <div className="roulette-bets-row roulette-bets-colors">
+              {COLOR_BETS.map((b) => (
+                <button
+                  key={b.type}
+                  type="button"
+                  className={[
+                    'roulette-bet-chip',
+                    b.type === 'red' ? 'is-red' : '',
+                    b.type === 'green' ? 'is-green' : '',
+                    b.type === 'black' ? 'is-black' : '',
+                    selected === b.type ? 'active' : '',
+                  ].join(' ')}
                   disabled={spinning}
-                  onChange={(e) =>
-                    setBetInput(e.target.value.replace(/[^\d]/g, ''))
-                  }
-                  onBlur={commitInput}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.currentTarget.blur()
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                className="bet-step-btn"
-                aria-label="Increase bet"
-                disabled={spinning}
-                onClick={() => applyBet(nextRouletteBetStep(bet, 1))}
-              >
-                +
-              </button>
+                  onClick={() => setSelected(b.type)}
+                >
+                  <span className="roulette-bet-name">{b.label}</span>
+                  <span className="roulette-bet-mult">{b.multiplier}</span>
+                </button>
+              ))}
             </div>
-
-            <div className="bet-presets bet-presets-compact">
-              <button
-                type="button"
-                className={[
-                  'bet-chip',
-                  bet === ROULETTE_MIN_BET ? 'active' : '',
-                ].join(' ')}
-                disabled={spinning || balance < ROULETTE_MIN_BET}
-                onClick={() => applyBet(ROULETTE_MIN_BET)}
-              >
-                Min
-              </button>
-              <button
-                type="button"
-                className="bet-chip"
-                disabled={spinning || balance < ROULETTE_MIN_BET * 2}
-                onClick={() => applyBet(Math.floor(balance / 2))}
-              >
-                ½
-              </button>
-              <button
-                type="button"
-                className="bet-chip"
-                disabled={spinning || balance < ROULETTE_MIN_BET || bet >= balance}
-                onClick={() => applyBet(bet * 2)}
-              >
-                x2
-              </button>
-              <button
-                type="button"
-                className="bet-chip"
-                disabled={spinning || balance < ROULETTE_MIN_BET}
-                onClick={() => applyBet(balance)}
-              >
-                Max
-              </button>
+            <div className="roulette-bets-row roulette-bets-ranges">
+              {RANGE_BETS.map((b) => (
+                <button
+                  key={b.type}
+                  type="button"
+                  className={[
+                    'roulette-bet-chip',
+                    selected === b.type ? 'active' : '',
+                  ].join(' ')}
+                  disabled={spinning}
+                  onClick={() => setSelected(b.type)}
+                >
+                  <span className="roulette-bet-name">{b.label}</span>
+                  <span className="roulette-bet-mult">{b.multiplier}</span>
+                </button>
+              ))}
             </div>
           </div>
-
-          <button
-            type="button"
-            className="btn-primary roulette-spin-btn"
-            disabled={
-              spinning ||
-              !profile ||
-              profile.chipBalance < bet ||
-              bet < ROULETTE_MIN_BET
-            }
-            onClick={onSpin}
-          >
-            {spinning ? 'Spinning…' : `Spin · ${formatMoney(bet)}`}
-          </button>
-
-          <p className="roulette-result" aria-live="polite">
-            {resultMsg ?? '\u00a0'}
-          </p>
-        </div>
+        </GameBetControls>
       </div>
     </GameOpenOverlay>
   )

@@ -1,4 +1,6 @@
 import { EUROPEAN_WHEEL, pocketColor } from '@/games/roulette/engine'
+import { TgGiftLottie } from '@/components/TgGiftLottie'
+import { giftPngForRole } from '@/gifts/catalog'
 
 type Props = {
   rotationDeg: number
@@ -84,9 +86,30 @@ export function RouletteWheel({
           )
         })}
         <circle cx={CX} cy={CY} r={INNER - 4} fill="#2c2c2e" />
-        <circle cx={CX} cy={CY} r={36} fill="#1c1c1e" stroke="rgba(255,255,255,0.12)" />
-        <circle cx={CX} cy={CY} r={10} fill="#0a84ff" />
+        <circle
+          cx={CX}
+          cy={CY}
+          r={50}
+          fill="#1c1c1e"
+          stroke="rgba(255,255,255,0.12)"
+        />
       </svg>
+      <div className="roulette-hub-gift" aria-hidden>
+        <TgGiftLottie
+          role="roulette"
+          loop={false}
+          play={spinning}
+          className="roulette-hub-lottie"
+          fallback={
+            <img
+              src={giftPngForRole('roulette')}
+              alt=""
+              className="roulette-hub-static"
+              draggable={false}
+            />
+          }
+        />
+      </div>
     </div>
   )
 }

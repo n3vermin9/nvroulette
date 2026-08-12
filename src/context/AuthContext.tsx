@@ -44,6 +44,7 @@ type AuthContextValue = {
     game: string
     amount: number
     refId: string
+    countStats?: boolean
   }) => { ok: boolean; message: string }
   creditPayout: (args: {
     game: string
@@ -190,7 +191,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [commitProfile, mode])
 
   const debitBet = useCallback(
-    (args: { game: string; amount: number; refId: string }) => {
+    (args: {
+      game: string
+      amount: number
+      refId: string
+      /** When false, still debits but skips rounds/wager stats (e.g. BJ double). */
+      countStats?: boolean
+    }) => {
       const current = profileRef.current
       if (!current) return { ok: false, message: 'No profile loaded' }
       if (args.amount <= 0) return { ok: false, message: 'Invalid bet' }
@@ -205,15 +212,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      const countStats = args.countStats !== false
       const stats = normalizeStats(current.stats)
       const next: UserProfile = {
         ...current,
         chipBalance: current.chipBalance - args.amount,
-        stats: {
-          ...stats,
-          roundsPlayed: stats.roundsPlayed + 1,
-          totalWagered: stats.totalWagered + args.amount,
-        },
+        stats: countStats
+          ? {
+              ...stats,
+              roundsPlayed: stats.roundsPlayed + 1,
+              totalWagered: stats.totalWagered + args.amount,
+            }
+          : {
+              ...stats,
+              totalWagered: stats.totalWagered + args.amount,
+            },
       }
       appendDemoTransaction({
         uid: next.uid,
@@ -256,8 +269,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nextStats = {
           ...stats,
           totalWon: stats.totalWon + args.amount,
-          biggestWin: Math.max(stats.biggestWin, args.amount),
-          biggestMultiplier: Math.max(stats.biggestMultiplier, multiplier),
+          biggestWin:
+            args.amount > 0
+              ? Math.max(stats.biggestWin, args.amount)
+              : stats.biggestWin,
+          biggestMultiplier:
+            args.amount > 0
+              ? Math.max(stats.biggestMultiplier, multiplier)
+              : stats.biggestMultiplier,
         }
       } else {
         // Refund path — undo the wager counted on debit.
@@ -273,13 +292,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         chipBalance: current.chipBalance + args.amount,
         stats: nextStats,
       }
-      appendDemoTransaction({
-        uid: next.uid,
-        game: args.game,
-        type: 'payout',
-        amount: args.amount,
-        refId: args.refId,
-      })
+      // Losing spins return $0 — don't spam Activity with empty payouts.
+      if (args.amount > 0) {
+        appendDemoTransaction({
+          uid: next.uid,
+          game: args.game,
+          type: 'payout',
+          amount: args.amount,
+          refId: args.refId,
+        })
+      }
       commitProfile(next)
       return { ok: true, message: 'Payout credited' }
     },

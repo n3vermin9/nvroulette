@@ -1,11 +1,11 @@
-export const PLINKO_ROWS = 10
+export const PLINKO_ROWS = 8
 
 /**
- * Multipliers L→R (11 bins). Tuned for ~0.52 RTP under fair L/R peg bounces
+ * Multipliers L→R (9 bins). Tuned for ~0.52 RTP under fair L/R peg bounces
  * so the house keeps a clear edge.
  */
 export const PLINKO_MULTIPLIERS = [
-  4.2, 1.6, 0.85, 0.6, 0.45, 0.35, 0.45, 0.6, 0.85, 1.6, 4.2,
+  4.2, 1.6, 0.85, 0.45, 0.35, 0.45, 0.85, 1.6, 4.2,
 ] as const
 
 export const PLINKO_MIN_BET = 50
@@ -29,9 +29,9 @@ export function nextBetStep(current: number, direction: 1 | -1): number {
 }
 
 export const BOARD_WIDTH = 340
-export const BOARD_HEIGHT = 460
+export const BOARD_HEIGHT = 420
 export const BALL_RADIUS = 6
-export const PEG_RADIUS = 3.6
+export const PEG_RADIUS = 4.3
 /** Inner padding so balls collide inside the visible board. */
 export const BOARD_INSET = 14
 
@@ -54,7 +54,7 @@ export function layoutBoard(width: number, height: number): {
   const inset = BOARD_INSET + 4
   const top = height * 0.12
   const bottom = height * 0.76
-  const maxCols = PLINKO_ROWS + 2 // 12 pegs on last row → 11 landing gaps
+  const maxCols = PLINKO_ROWS + 2 // last-row pegs → bins = gaps between them
   const span = width - inset * 2
   const pegGapX = span / (maxCols - 1)
   const pegGapY = (bottom - top) / (PLINKO_ROWS - 1)

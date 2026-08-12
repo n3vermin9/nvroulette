@@ -4,6 +4,9 @@ import logo from '@/assets/logo.png'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { PlinkoPage } from '@/games/plinko/PlinkoPage'
+import { BlackjackPage } from '@/games/blackjack/BlackjackPage'
+import { CrashPage } from '@/games/crash/CrashPage'
+import { MinesPage } from '@/games/mines/MinesPage'
 import { RoulettePage } from '@/games/roulette/RoulettePage'
 import { ActivityPage } from '@/pages/ActivityPage'
 import { LobbyPage } from '@/pages/LobbyPage'
@@ -14,7 +17,7 @@ function BrandMark({ subtitle }: { subtitle?: string }) {
     <>
       <img src={logo} alt="" width={64} height={64} className="brand-mark-lg" />
       <p className="mt-4 font-display text-[1.85rem] text-[var(--label)]">
-        NV Roulette
+        nvRoulette
       </p>
       {subtitle ? (
         <p className="mt-2 text-sm text-[var(--secondary-label)]">{subtitle}</p>
@@ -62,7 +65,10 @@ export default function App() {
             <Route element={<AppShell />}>
               <Route index element={<LobbyPage />} />
               <Route path="games/plinko" element={<PlinkoPage />} />
+              <Route path="games/blackjack" element={<BlackjackPage />} />
+              <Route path="games/crash" element={<CrashPage />} />
               <Route path="games/roulette" element={<RoulettePage />} />
+              <Route path="games/mines" element={<MinesPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

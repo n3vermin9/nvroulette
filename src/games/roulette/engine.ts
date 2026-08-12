@@ -16,6 +16,7 @@ export type PocketColor = 'green' | 'red' | 'black'
 
 export type OutsideBetType =
   | 'red'
+  | 'green'
   | 'black'
   | 'odd'
   | 'even'
@@ -66,6 +67,7 @@ export function spinEuropean(): SpinResult {
 
 export function betWins(bet: OutsideBetType, result: SpinResult): boolean {
   const { number, color } = result
+  if (bet === 'green') return number === 0
   if (number === 0) return false
   switch (bet) {
     case 'red':
@@ -83,23 +85,48 @@ export function betWins(bet: OutsideBetType, result: SpinResult): boolean {
   }
 }
 
-/** Even-money outside bets pay 1:1 (stake returned + win). */
+/** Payout including stake: even money ×2, green/0 pays 35:1 → ×36. */
 export function payoutForBet(bet: RouletteBet, result: SpinResult): number {
   if (!betWins(bet.type, result)) return 0
+  if (bet.type === 'green') return bet.amount * 36
   return bet.amount * 2
 }
 
-export const OUTSIDE_BETS: { type: OutsideBetType; label: string }[] = [
-  { type: 'red', label: 'Red' },
-  { type: 'black', label: 'Black' },
-  { type: 'odd', label: 'Odd' },
-  { type: 'even', label: 'Even' },
-  { type: 'low', label: '1–18' },
-  { type: 'high', label: '19–36' },
+export const COLOR_BETS: {
+  type: OutsideBetType
+  label: string
+  multiplier: string
+}[] = [
+  { type: 'red', label: 'Red', multiplier: '2x' },
+  { type: 'green', label: 'Green', multiplier: '36x' },
+  { type: 'black', label: 'Black', multiplier: '2x' },
 ]
 
-/** Degrees to rotate so `index` lands under the top pointer. */
+export const RANGE_BETS: {
+  type: OutsideBetType
+  label: string
+  multiplier: string
+}[] = [
+  { type: 'odd', label: 'Odd', multiplier: '2x' },
+  { type: 'even', label: 'Even', multiplier: '2x' },
+  { type: 'low', label: '1–18', multiplier: '2x' },
+  { type: 'high', label: '19–36', multiplier: '2x' },
+]
+
+/** Degrees so pocket `index` sits under the top pointer (pocket center). */
 export function rotationForIndex(index: number, spins = 6): number {
   const slice = 360 / EUROPEAN_WHEEL.length
-  return spins * 360 + (360 - index * slice)
+  const center = index * slice + slice / 2
+  return spins * 360 + ((360 - center) % 360)
+}
+
+/**
+ * Final resting angle for a spin: pocket center ± jitter inside the pocket,
+ * never on a seam.
+ */
+export function landingRotation(index: number): number {
+  const slice = 360 / EUROPEAN_WHEEL.length
+  const center = index * slice + slice / 2
+  const jitter = (Math.random() - 0.5) * slice * 0.7
+  return (360 - (center + jitter) + 360) % 360
 }

@@ -15,6 +15,7 @@ import {
   PLINKO_MULTIPLIERS,
   payoutForBin,
 } from '@/games/plinko/engine'
+import { formatMoney } from '@/lib/format'
 
 export type BallLandedEvent = {
   id: string
@@ -41,8 +42,22 @@ type BallMeta = {
 
 type FlashBin = { index: number; until: number }
 
+type PayoutFloat = {
+  binIndex: number
+  label: string
+  positive: boolean
+  born: number
+  until: number
+  particles: { angle: number; dist: number; size: number }[]
+}
+
 const LAYOUT = layoutBoard(BOARD_WIDTH, BOARD_HEIGHT)
 const WALL = 36
+/** Shorter payout bins under the peg field. */
+const BIN_TOP = BOARD_HEIGHT * 0.905
+const BIN_HEIGHT = BOARD_HEIGHT * 0.065
+const BIN_MID = BIN_TOP + BIN_HEIGHT / 2
+const PAYOUT_FLOAT_MS = 900
 /** Visual frame drawn here. */
 const INNER_LEFT = BOARD_INSET
 const INNER_RIGHT = BOARD_WIDTH - BOARD_INSET
@@ -55,12 +70,29 @@ const PLAY_RIGHT = INNER_RIGHT - PLAY_PAD
 const PLAY_TOP = INNER_TOP + PLAY_PAD
 const PLAY_BOTTOM = INNER_BOTTOM - PLAY_PAD
 
+function makePayoutFloat(binIndex: number, payout: number): PayoutFloat {
+  const now = performance.now()
+  return {
+    binIndex,
+    label: payout > 0 ? `+${formatMoney(payout)}` : formatMoney(0),
+    positive: payout > 0,
+    born: now,
+    until: now + PAYOUT_FLOAT_MS,
+    particles: Array.from({ length: 7 }, (_, i) => ({
+      angle: (Math.PI * 2 * i) / 7 + (Math.random() - 0.5) * 0.35,
+      dist: 10 + Math.random() * 14,
+      size: 1.6 + Math.random() * 1.8,
+    })),
+  }
+}
+
 export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
   function PlinkoBoard({ onBallLanded }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const engineRef = useRef<Matter.Engine | null>(null)
     const ballsRef = useRef(new Map<number, BallMeta>())
     const flashRef = useRef<FlashBin[]>([])
+    const floatsRef = useRef<PayoutFloat[]>([])
     const onLandedRef = useRef(onBallLanded)
     onLandedRef.current = onBallLanded
 
@@ -180,9 +212,9 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
       const binSensors = LAYOUT.bins.map((bin) =>
         Matter.Bodies.rectangle(
           bin.x + bin.width / 2,
-          BOARD_HEIGHT * 0.9,
+          BIN_MID,
           bin.width - 2,
-          BOARD_HEIGHT * 0.1,
+          BIN_HEIGHT,
           {
             isStatic: true,
             isSensor: true,
@@ -193,7 +225,7 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
       )
 
       const dividers = LAYOUT.bins.slice(1).map((bin) =>
-        Matter.Bodies.rectangle(bin.x, BOARD_HEIGHT * 0.88, 2.5, BOARD_HEIGHT * 0.16, {
+        Matter.Bodies.rectangle(bin.x, BIN_MID, 2.5, BIN_HEIGHT + 10, {
           isStatic: true,
           restitution: 0.1,
           friction: 0.3,
@@ -231,9 +263,14 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
           payout,
         })
 
+        const now = performance.now()
         flashRef.current = [
-          ...flashRef.current.filter((f) => f.until > performance.now()),
-          { index: binIndex, until: performance.now() + 700 },
+          ...flashRef.current.filter((f) => f.until > now),
+          { index: binIndex, until: now + 700 },
+        ]
+        floatsRef.current = [
+          ...floatsRef.current.filter((f) => f.until > now),
+          makePayoutFloat(binIndex, payout),
         ]
 
         Matter.Composite.remove(engine.world, ball)
@@ -421,9 +458,9 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
           pathRoundRect(
             ctx,
             bin.x + 1,
-            BOARD_HEIGHT * 0.86,
+            BIN_TOP,
             bin.width - 2,
-            BOARD_HEIGHT * 0.11,
+            BIN_HEIGHT,
             4,
           )
           ctx.fillStyle = isHot ? '#0a84ff' : 'rgba(120,120,128,0.28)'
@@ -439,8 +476,50 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
           ctx.fillText(
             `${PLINKO_MULTIPLIERS[bin.index]}`,
             bin.x + bin.width / 2,
-            BOARD_HEIGHT * 0.915,
+            BIN_MID,
           )
+        }
+
+        const activeFloats = floatsRef.current.filter((f) => f.until > now)
+        floatsRef.current = activeFloats
+        for (const float of activeFloats) {
+          const bin = LAYOUT.bins[float.binIndex]
+          if (!bin) continue
+          const t = Math.min(1, (now - float.born) / PAYOUT_FLOAT_MS)
+          const ease = 1 - Math.pow(1 - t, 3)
+          const cx = bin.x + bin.width / 2
+          const cy = BIN_TOP - 4
+          const rise = ease * 36
+          const opacity =
+            t < 0.15 ? t / 0.15 : t > 0.55 ? Math.max(0, (1 - t) / 0.45) : 1
+          const scale = 0.88 + Math.min(1, t / 0.2) * 0.14
+
+          for (const p of float.particles) {
+            const pr = ease * p.dist
+            const px = cx + Math.cos(p.angle) * pr
+            const py = cy - rise * 0.35 + Math.sin(p.angle) * pr * 0.85
+            ctx.beginPath()
+            ctx.arc(px, py, p.size * (1 - ease * 0.35), 0, Math.PI * 2)
+            ctx.fillStyle = float.positive
+              ? `rgba(48, 209, 88, ${opacity * 0.9})`
+              : `rgba(235, 235, 245, ${opacity * 0.55})`
+            ctx.fill()
+          }
+
+          ctx.save()
+          ctx.translate(cx, cy - rise)
+          ctx.scale(scale, scale)
+          ctx.globalAlpha = opacity
+          ctx.font =
+            '700 13px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.lineWidth = 3
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)'
+          ctx.strokeText(float.label, 0, 0)
+          ctx.fillStyle = float.positive ? '#30d158' : '#f2f2f7'
+          ctx.fillText(float.label, 0, 0)
+          ctx.restore()
         }
       }
 
@@ -454,6 +533,7 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
         Matter.Engine.clear(engine)
         engineRef.current = null
         ballsRef.current.clear()
+        floatsRef.current = []
       }
     }, [])
 

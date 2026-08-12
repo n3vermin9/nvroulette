@@ -11,12 +11,28 @@ export type GameEntry = {
 
 export const GAMES: GameEntry[] = [
   {
-    id: 'plinko',
-    name: 'Plinko',
-    blurb: 'Drop · pegs · multipliers',
-    mark: 'P',
+    id: 'blackjack',
+    name: 'Blackjack',
+    blurb: 'Hit · stand · custom gift cards',
+    mark: 'B',
     status: 'live',
-    path: '/games/plinko',
+    path: '/games/blackjack',
+  },
+  {
+    id: 'crash',
+    name: 'Crash',
+    blurb: 'Surf · climb · cash out',
+    mark: 'C',
+    status: 'live',
+    path: '/games/crash',
+  },
+  {
+    id: 'mines',
+    name: 'Mines',
+    blurb: 'Gems · mines · cash out',
+    mark: 'M',
+    status: 'live',
+    path: '/games/mines',
   },
   {
     id: 'roulette',
@@ -25,5 +41,13 @@ export const GAMES: GameEntry[] = [
     mark: 'R',
     status: 'live',
     path: '/games/roulette',
+  },
+  {
+    id: 'plinko',
+    name: 'Plinko',
+    blurb: 'Drop · pegs · multipliers',
+    mark: 'P',
+    status: 'live',
+    path: '/games/plinko',
   },
 ]

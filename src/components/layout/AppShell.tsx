@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import logo from '@/assets/logo.png'
+import { WalletSheet } from '@/components/WalletSheet'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { useAuth } from '@/context/AuthContext'
 import { APP_NAME } from '@/lib/constants'
@@ -9,6 +11,8 @@ export function AppShell() {
   const { profile } = useAuth()
   const { pathname } = useLocation()
   const inGame = pathname.startsWith('/games/')
+  const [walletOpen, setWalletOpen] = useState(false)
+  const [walletVisible, setWalletVisible] = useState(false)
 
   return (
     <div className={['app-root', inGame ? 'app-root-game' : ''].join(' ')}>
@@ -27,7 +31,13 @@ export function AppShell() {
               {APP_NAME}
             </p>
           </div>
-          <div className="chip-pill shrink-0" aria-label="Balance">
+          <button
+            type="button"
+            className="chip-pill shrink-0"
+            aria-label="Open wallet"
+            aria-expanded={walletVisible}
+            onClick={() => setWalletOpen(true)}
+          >
             <span className="money-mark" aria-hidden>
               $
             </span>
@@ -36,7 +46,7 @@ export function AppShell() {
                 ? formatMoney(profile.chipBalance).replace(/^\$/, '')
                 : '—'}
             </span>
-          </div>
+          </button>
         </div>
       </header>
 
@@ -51,7 +61,13 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      {inGame ? null : <BottomNav />}
+      {inGame || walletVisible ? null : <BottomNav />}
+
+      <WalletSheet
+        open={walletOpen}
+        onClose={() => setWalletOpen(false)}
+        onVisibleChange={setWalletVisible}
+      />
     </div>
   )
 }

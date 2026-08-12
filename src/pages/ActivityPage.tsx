@@ -4,6 +4,9 @@ import type { Transaction } from '@/types/user'
 
 export function ActivityPage() {
   const { transactions, mode } = useAuth()
+  const visible = transactions.filter(
+    (tx) => !(tx.type === 'payout' && tx.amount === 0),
+  )
 
   return (
     <div className="flex flex-col gap-5">
@@ -17,7 +20,7 @@ export function ActivityPage() {
       </header>
 
       <section className="motion-fade-up motion-delay-1">
-        {transactions.length === 0 ? (
+        {visible.length === 0 ? (
           <div className="panel">
             <p className="text-sm text-[var(--secondary-label)]">
               No transactions yet.
@@ -28,7 +31,7 @@ export function ActivityPage() {
           </div>
         ) : (
           <ul className="overflow-hidden rounded-[1.2rem] border border-white/[0.08] bg-[rgba(28,28,30,0.94)]">
-            {transactions.map((tx, i) => (
+            {visible.map((tx, i) => (
               <li
                 key={tx.id}
                 className={[
@@ -47,7 +50,11 @@ export function ActivityPage() {
                 <p
                   className={[
                     'text-[1.05rem] font-semibold tabular-nums tracking-tight',
-                    tx.amount >= 0 ? 'text-[var(--green)]' : 'text-[var(--red)]',
+                    tx.amount > 0
+                      ? 'text-[var(--green)]'
+                      : tx.amount < 0
+                        ? 'text-[var(--red)]'
+                        : 'text-[var(--secondary-label)]',
                   ].join(' ')}
                 >
                   {formatMoneyDelta(tx.amount)}
