@@ -6,8 +6,8 @@ export function LobbyPage() {
   return (
     <div className="flex flex-col gap-1">
       <h1 className="sr-only">Games</h1>
-      <ul className="motion-fade-up game-list">
-        {GAMES.map((game) => {
+      <ul className="game-list">
+        {GAMES.map((game, index) => {
           const inner = (
             <>
               <div className="game-preview" aria-hidden>
@@ -32,7 +32,11 @@ export function LobbyPage() {
           )
 
           return (
-            <li key={game.id}>
+            <li
+              key={game.id}
+              className="motion-fade-up"
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
               {game.path && game.status === 'live' ? (
                 <Link to={game.path} className="game-card game-card-link">
                   {inner}

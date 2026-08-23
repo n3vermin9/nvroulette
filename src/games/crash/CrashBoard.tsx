@@ -32,7 +32,6 @@ export function CrashBoard({ phase, multiplier }: Props) {
   const tip = tipPoint(live)
   const pathD = active ? graphPath(live) : ''
   const png = giftPngForRole('crash')
-  const idle = tipPoint(1.01)
   const tickKey = ticks.map((t) => t.value).join(',')
 
   const bornRef = useRef(new Map<number, number>())
@@ -217,8 +216,8 @@ export function CrashBoard({ phase, multiplier }: Props) {
           .filter(Boolean)
           .join(' ')}
         style={{
-          left: `${active ? tip.x : idle.x}%`,
-          top: `${active ? tip.y : idle.y}%`,
+          left: active ? `${tip.x}%` : '50%',
+          top: active ? `${tip.y}%` : '50%',
         }}
       >
         <TgGiftLottie

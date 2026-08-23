@@ -22,6 +22,7 @@
     "@capacitor/keyboard": "^8.0.5",
     "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/status-bar": "^8.0.3",
+    "claude": "^0.1.1",
     "firebase": "^12.17.1",
     "framer-motion": "^13.1.0",
     "lottie-react": "^2.4.1",

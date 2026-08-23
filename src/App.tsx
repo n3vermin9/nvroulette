@@ -8,6 +8,7 @@ import { BlackjackPage } from '@/games/blackjack/BlackjackPage'
 import { CrashPage } from '@/games/crash/CrashPage'
 import { MinesPage } from '@/games/mines/MinesPage'
 import { RoulettePage } from '@/games/roulette/RoulettePage'
+import { SlotsPage } from '@/games/slots/SlotsPage'
 import { ActivityPage } from '@/pages/ActivityPage'
 import { LobbyPage } from '@/pages/LobbyPage'
 import { ProfilePage } from '@/pages/ProfilePage'
@@ -69,6 +70,7 @@ export default function App() {
               <Route path="games/crash" element={<CrashPage />} />
               <Route path="games/roulette" element={<RoulettePage />} />
               <Route path="games/mines" element={<MinesPage />} />
+              <Route path="games/slots" element={<SlotsPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

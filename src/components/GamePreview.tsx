@@ -1,6 +1,7 @@
 import { TgGiftLottie } from '@/components/TgGiftLottie'
-import { giftPngForRole } from '@/gifts/catalog'
+import { giftPngForRole, giftPngUrl } from '@/gifts/catalog'
 import { bjCardBackPng, bjSuitPng } from '@/games/blackjack/gifts'
+import { SLOT_SYMBOLS } from '@/games/slots/engine'
 
 type Props = {
   gameId: string
@@ -13,6 +14,7 @@ export function GamePreview({ gameId }: Props) {
   if (gameId === 'mines') return <MinesPreview />
   if (gameId === 'blackjack') return <BlackjackPreview />
   if (gameId === 'crash') return <CrashPreview />
+  if (gameId === 'slots') return <SlotsPreview />
   return <div className="game-preview-fallback" />
 }
 
@@ -359,6 +361,72 @@ function CrashPreview() {
               src={giftPngForRole('crash')}
               alt=""
               className="crash-preview-hero-img"
+              draggable={false}
+            />
+          }
+        />
+      </div>
+    </div>
+  )
+}
+
+function SlotsPreview() {
+  const hero = SLOT_SYMBOLS[0]
+
+  return (
+    <div className="slots-preview" aria-hidden>
+      <svg
+        className="game-preview-svg"
+        viewBox="0 0 200 140"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <defs>
+          <linearGradient id="slotsPreviewBg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#2d2144" />
+            <stop offset="55%" stopColor="#1c1c2d" />
+            <stop offset="100%" stopColor="#131721" />
+          </linearGradient>
+        </defs>
+        <rect width="200" height="140" fill="url(#slotsPreviewBg)" />
+        <g opacity="0.45">
+          {[31, 78, 125].map((x) => (
+            <rect
+              key={x}
+              x={x}
+              y="30"
+              width="36"
+              height="82"
+              rx="8"
+              fill="rgba(0,0,0,0.34)"
+              stroke="rgba(255,255,255,0.22)"
+            />
+          ))}
+        </g>
+        <path d="M 22 70 H 178" stroke="#ff453a" strokeWidth="2" opacity="0.72" />
+        {[49, 96, 143].map((x) => (
+          <text
+            key={x}
+            x={x}
+            y="79"
+            textAnchor="middle"
+            fill="#ffd60a"
+            fontSize="24"
+            fontWeight="700"
+          >
+            ✦
+          </text>
+        ))}
+      </svg>
+      <div className="slots-preview-hero">
+        <TgGiftLottie
+          gift={hero.slug}
+          play={false}
+          className="slots-preview-hero-lottie"
+          fallback={
+            <img
+              src={giftPngUrl(hero.slug, 128)}
+              alt=""
+              className="slots-preview-static"
               draggable={false}
             />
           }

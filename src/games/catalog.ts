@@ -11,6 +11,14 @@ export type GameEntry = {
 
 export const GAMES: GameEntry[] = [
   {
+    id: 'slots',
+    name: 'Slots',
+    blurb: 'Spin · gifts · jackpots',
+    mark: 'S',
+    status: 'live',
+    path: '/games/slots',
+  },
+  {
     id: 'blackjack',
     name: 'Blackjack',
     blurb: 'Hit · stand · custom gift cards',
