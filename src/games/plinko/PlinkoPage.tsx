@@ -12,6 +12,7 @@ import {
   clampBet,
   nextBetStep,
   PLINKO_MIN_BET,
+  PLINKO_MULTIPLIERS,
 } from '@/games/plinko/engine'
 import { useGameBet } from '@/hooks/useGameBet'
 import { formatMoneyDelta } from '@/lib/format'
@@ -22,6 +23,7 @@ export function PlinkoPage() {
   const boardRef = useRef<PlinkoBoardHandle>(null)
   const [resultMsg, setResultMsg] = useState<string | null>(null)
   const [inFlight, setInFlight] = useState(0)
+  const [payoutsOpen, setPayoutsOpen] = useState(false)
 
   const stake = useGameBet({
     minBet: PLINKO_MIN_BET,
@@ -87,13 +89,17 @@ export function PlinkoPage() {
           <h1 className="font-display text-[1.15rem] text-[var(--label)]">
             Plinko
           </h1>
-          <span className="w-12 text-right text-[11px] tabular-nums text-[var(--secondary-label)]">
+          <span className="w-5 text-right text-[11px] tabular-nums text-[var(--secondary-label)]">
             {inFlight > 0 ? `${inFlight}` : ''}
           </span>
         </div>
 
         <div className="plinko-board-slot">
-          <PlinkoBoard ref={boardRef} onBallLanded={onBallLanded} />
+          <PlinkoBoard
+            ref={boardRef}
+            onBallLanded={onBallLanded}
+            onInfoClick={() => setPayoutsOpen(true)}
+          />
         </div>
 
         <GameBetControls
@@ -116,6 +122,44 @@ export function PlinkoPage() {
           canDouble={stake.canDouble}
           canMinOrMax={stake.canMinOrMax}
         />
+
+        {payoutsOpen ? (
+          <div
+            className="game-info-backdrop"
+            role="presentation"
+            onClick={() => setPayoutsOpen(false)}
+          >
+            <section
+              className="game-info-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="plinko-payouts-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="game-info-heading">
+                <h2 id="plinko-payouts-title">Plinko payouts</h2>
+                <button
+                  type="button"
+                  className="game-info-close"
+                  aria-label="Close Plinko payouts"
+                  onClick={() => setPayoutsOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <p className="game-info-note">
+                Land in a bin to multiply your bet. Edge bins pay the most.
+              </p>
+              <div className="plinko-payout-grid">
+                {PLINKO_MULTIPLIERS.map((multiplier, index) => (
+                  <span key={index} className="plinko-payout-chip">
+                    {multiplier}x
+                  </span>
+                ))}
+              </div>
+            </section>
+          </div>
+        ) : null}
       </div>
     </GameOpenOverlay>
   )

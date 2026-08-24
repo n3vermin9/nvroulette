@@ -4,7 +4,10 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from 'react'
+import { TgGiftLottie } from '@/components/TgGiftLottie'
+import { giftPngUrl } from '@/gifts/catalog'
 import {
   BALL_RADIUS,
   BOARD_HEIGHT,
@@ -12,7 +15,6 @@ import {
   BOARD_WIDTH,
   layoutBoard,
   PEG_RADIUS,
-  PLINKO_MULTIPLIERS,
   payoutForBin,
 } from '@/games/plinko/engine'
 import { formatMoney } from '@/lib/format'
@@ -33,6 +35,7 @@ export type PlinkoBoardHandle = {
 
 type Props = {
   onBallLanded: (event: BallLandedEvent) => void
+  onInfoClick: () => void
 }
 
 type BallMeta = {
@@ -40,8 +43,6 @@ type BallMeta = {
   bet: number
   settled: boolean
 }
-
-type FlashBin = { index: number; until: number }
 
 type PayoutFloat = {
   binIndex: number
@@ -71,6 +72,16 @@ const PLAY_RIGHT = INNER_RIGHT - PLAY_PAD
 const PLAY_TOP = INNER_TOP + PLAY_PAD
 const PLAY_BOTTOM = INNER_BOTTOM - PLAY_PAD
 
+const PLINKO_BIN_GIFTS = [
+  'money-pot',
+  'swiss-watch',
+  'happy-brownie',
+  'jester-hat',
+  'happy-brownie',
+  'swiss-watch',
+  'money-pot',
+] as const
+
 function makePayoutFloat(binIndex: number, payout: number): PayoutFloat {
   const now = performance.now()
   return {
@@ -88,12 +99,13 @@ function makePayoutFloat(binIndex: number, payout: number): PayoutFloat {
 }
 
 export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
-  function PlinkoBoard({ onBallLanded }, ref) {
+  function PlinkoBoard({ onBallLanded, onInfoClick }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const engineRef = useRef<Matter.Engine | null>(null)
     const ballsRef = useRef(new Map<number, BallMeta>())
-    const flashRef = useRef<FlashBin[]>([])
     const floatsRef = useRef<PayoutFloat[]>([])
+    const hitTimerRef = useRef<number | null>(null)
+    const [landedBin, setLandedBin] = useState<number | null>(null)
     const onLandedRef = useRef(onBallLanded)
     onLandedRef.current = onBallLanded
 
@@ -265,14 +277,16 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
         })
 
         const now = performance.now()
-        flashRef.current = [
-          ...flashRef.current.filter((f) => f.until > now),
-          { index: binIndex, until: now + 700 },
-        ]
         floatsRef.current = [
           ...floatsRef.current.filter((f) => f.until > now),
           makePayoutFloat(binIndex, payout),
         ]
+        if (hitTimerRef.current) window.clearTimeout(hitTimerRef.current)
+        setLandedBin(binIndex)
+        hitTimerRef.current = window.setTimeout(() => {
+          setLandedBin(null)
+          hitTimerRef.current = null
+        }, 650)
 
         Matter.Composite.remove(engine.world, ball)
         ballsRef.current.delete(ball.id)
@@ -363,10 +377,6 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
         }
 
         const now = performance.now()
-        const hot = new Set(
-          flashRef.current.filter((f) => f.until > now).map((f) => f.index),
-        )
-
         ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT)
 
         const grad = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT)
@@ -456,33 +466,6 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
 
         ctx.restore()
 
-        for (const bin of LAYOUT.bins) {
-          const isHot = hot.has(bin.index)
-          pathRoundRect(
-            ctx,
-            bin.x + 1,
-            BIN_TOP,
-            bin.width - 2,
-            BIN_HEIGHT,
-            4,
-          )
-          ctx.fillStyle = isHot ? '#0a84ff' : 'rgba(120,120,128,0.28)'
-          ctx.fill()
-          ctx.strokeStyle = isHot ? '#409cff' : 'rgba(255,255,255,0.08)'
-          ctx.lineWidth = 1
-          ctx.stroke()
-
-          ctx.fillStyle = isHot ? '#ffffff' : 'rgba(235,235,245,0.6)'
-          ctx.font = '600 9px -apple-system, BlinkMacSystemFont, sans-serif'
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillText(
-            `${PLINKO_MULTIPLIERS[bin.index]}`,
-            bin.x + bin.width / 2,
-            BIN_MID,
-          )
-        }
-
         const activeFloats = floatsRef.current.filter((f) => f.until > now)
         floatsRef.current = activeFloats
         for (const float of activeFloats) {
@@ -537,15 +520,64 @@ export const PlinkoBoard = forwardRef<PlinkoBoardHandle, Props>(
         engineRef.current = null
         ballsRef.current.clear()
         floatsRef.current = []
+        if (hitTimerRef.current) window.clearTimeout(hitTimerRef.current)
       }
     }, [])
 
     return (
-      <canvas
-        ref={canvasRef}
-        className="plinko-board"
-        aria-label="Plinko board"
-      />
+      <div className="plinko-board-wrap">
+        <canvas
+          ref={canvasRef}
+          className="plinko-board"
+          aria-label="Plinko board"
+        />
+        <button
+          type="button"
+          className="plinko-info-button"
+          aria-label="Show Plinko payouts"
+          aria-haspopup="dialog"
+          onClick={onInfoClick}
+        >
+          <span aria-hidden>i</span>
+          Payouts
+        </button>
+        <div className="plinko-bin-row" aria-hidden>
+          {LAYOUT.bins.map((bin) => {
+            const gift = PLINKO_BIN_GIFTS[bin.index]
+            return (
+              <div
+                key={bin.index}
+                className={[
+                  'plinko-bin',
+                  landedBin === bin.index ? 'is-hit' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                style={{
+                  left: `${((bin.x + 1) / BOARD_WIDTH) * 100}%`,
+                  top: `${(BIN_TOP / BOARD_HEIGHT) * 100}%`,
+                  width: `${((bin.width - 2) / BOARD_WIDTH) * 100}%`,
+                  height: `${(BIN_HEIGHT / BOARD_HEIGHT) * 100}%`,
+                }}
+              >
+                <TgGiftLottie
+                  gift={gift}
+                  play={false}
+                  className="plinko-bin-lottie"
+                  fallback={
+                    <img
+                      src={giftPngUrl(gift, 64)}
+                      alt=""
+                      className="plinko-bin-fallback"
+                      draggable={false}
+                    />
+                  }
+                />
+              </div>
+            )
+          })}
+        </div>
+      </div>
     )
   },
 )

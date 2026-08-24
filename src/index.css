@@ -1,13 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
-/* iOS 26 dark — San Francisco + Liquid Glass surfaces */
+/* iOS 26 dark — Poppins + Liquid Glass surfaces */
 @theme {
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-    'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-display:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 :root {
@@ -95,8 +92,8 @@ textarea {
 
 .font-display {
   font-family: var(--font-display);
-  font-weight: 670;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.035em;
 }
 
 .app-root {
@@ -124,6 +121,120 @@ textarea {
   display: flex;
   flex-direction: column;
   padding: 0.4rem 0.75rem max(0.4rem, env(safe-area-inset-bottom));
+}
+
+/* Shared game chrome: each table stays distinct, while navigation and status
+   read as one cohesive arcade. */
+.plinko-topbar,
+.roulette-topbar,
+.crash-topbar,
+.mines-topbar,
+.bj-topbar,
+.slots-topbar {
+  position: relative;
+  justify-content: flex-start;
+  min-height: 2.1rem;
+  padding: 0.1rem 0.1rem 0.45rem;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.plinko-topbar h1,
+.roulette-topbar h1,
+.crash-topbar h1,
+.mines-topbar h1,
+.bj-topbar h1,
+.slots-topbar h1 {
+  position: absolute;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.plinko-topbar > span,
+.roulette-topbar > span,
+.crash-topbar > span,
+.mines-topbar > span,
+.bj-topbar > span {
+  margin-left: auto;
+}
+
+.game-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.game-info-button {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(120, 120, 128, 0.16);
+  color: var(--label);
+  font-family: ui-serif, Georgia, serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.game-info-backdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.56);
+  backdrop-filter: blur(7px);
+}
+
+.game-info-modal {
+  display: grid;
+  width: min(22rem, 100%);
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(36, 36, 38, 0.98);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.game-info-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.game-info-heading h2 {
+  margin: 0;
+  color: var(--label);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.game-info-close {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(120, 120, 128, 0.2);
+  color: var(--label);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.game-info-note {
+  margin: -0.45rem 0 0;
+  color: var(--secondary-label);
+  font-size: 0.82rem;
 }
 
 .atmosphere {
@@ -1001,14 +1112,175 @@ textarea {
   justify-content: center;
 }
 
-.plinko-board {
-  display: block;
+.plinko-board-wrap {
+  position: relative;
+  isolation: isolate;
   width: auto;
   height: 100%;
   max-width: 100%;
   max-height: 100%;
   aspect-ratio: 340 / 420;
   border-radius: 1.1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(48, 209, 88, 0.1), transparent 34%),
+    linear-gradient(160deg, #303034 0%, #171719 100%);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.plinko-board-wrap::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: inherit;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+}
+
+.plinko-board {
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.plinko-bin-row {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+}
+
+.plinko-info-button {
+  position: absolute;
+  z-index: 2;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  height: 1.7rem;
+  padding: 0 0.55rem 0 0.3rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(20, 20, 22, 0.72);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.plinko-info-button span {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: rgba(48, 209, 88, 0.18);
+  color: #8ff0a8;
+  font-family: ui-serif, Georgia, serif;
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.plinko-info-button:active {
+  transform: scale(0.96);
+}
+
+.plinko-bin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.35rem;
+  background: rgba(44, 44, 46, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.plinko-bin.is-hit {
+  z-index: 2;
+  animation: plinko-bin-hit 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.plinko-bin-lottie,
+.tg-gift-lottie.plinko-bin-lottie,
+.plinko-bin-fallback,
+.tg-gift-fallback.plinko-bin-lottie {
+  width: 88% !important;
+  height: 88% !important;
+  object-fit: contain;
+  display: block;
+}
+
+.plinko-bin-lottie svg,
+.tg-gift-lottie.plinko-bin-lottie svg {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.plinko-payout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.plinko-payout-chip {
+  display: grid;
+  place-items: center;
+  min-height: 2.2rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.6rem;
+  background: rgba(120, 120, 128, 0.14);
+  color: var(--label);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.plinko-payout-chip:nth-child(1),
+.plinko-payout-chip:nth-child(9) {
+  border-color: rgba(255, 214, 10, 0.42);
+  color: var(--yellow);
+}
+
+@keyframes plinko-bin-hit {
+  0% {
+    transform: scale(1);
+    border-color: rgba(48, 209, 88, 0.28);
+    background: rgba(48, 209, 88, 0.1);
+    box-shadow: 0 0 0 rgba(48, 209, 88, 0);
+  }
+  22% {
+    transform: scale(1.16);
+    border-color: rgba(48, 209, 88, 0.82);
+    background: rgba(48, 209, 88, 0.26);
+    box-shadow:
+      0 0 14px rgba(48, 209, 88, 0.42),
+      inset 0 0 8px rgba(255, 255, 255, 0.14);
+  }
+  50% {
+    transform: scale(0.98);
+    border-color: rgba(48, 209, 88, 0.46);
+    background: rgba(48, 209, 88, 0.14);
+    box-shadow: 0 0 8px rgba(48, 209, 88, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    border-color: rgba(48, 209, 88, 0.1);
+    background: rgba(48, 209, 88, 0);
+    box-shadow: 0 0 0 rgba(48, 209, 88, 0);
+  }
 }
 
 .roulette-screen {

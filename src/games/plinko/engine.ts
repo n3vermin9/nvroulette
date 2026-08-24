@@ -1,11 +1,12 @@
-export const PLINKO_ROWS = 8
+/** Six peg rows produce seven cleaner, wider landing bins. */
+export const PLINKO_ROWS = 6
 
 /**
- * Multipliers L→R (9 bins). Tuned for ~0.52 RTP under fair L/R peg bounces
+ * Multipliers L→R (7 bins). Tuned for ~0.62 RTP under fair L/R peg bounces
  * so the house keeps a clear edge.
  */
 export const PLINKO_MULTIPLIERS = [
-  4.2, 1.6, 0.85, 0.45, 0.35, 0.45, 0.85, 1.6, 4.2,
+  4.2, 1.1, 0.4, 0.3, 0.4, 1.1, 4.2,
 ] as const
 
 export const PLINKO_MIN_BET = 50
